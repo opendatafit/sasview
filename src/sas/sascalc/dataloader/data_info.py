@@ -175,6 +175,13 @@ class Vector(object):
         msg = "x = %s\ty = %s\tz = %s" % (str(self.x), str(self.y), str(self.z))
         return msg
 
+    def to_dict(self):
+        return {
+            'x': self.x,
+            'y': self.y,
+            'z': self.z,
+        }
+
 
 class Detector(object):
     """
@@ -230,6 +237,17 @@ class Detector(object):
             (str(self.slit_length), str(self.slit_length_unit))
         return _str
 
+    def to_dict(self):
+        return {
+            "Name":        self.name,
+            "Distance":    (self.distance, self.distance_unit),
+            "Offset":      (self.offset.to_dict(), self.offset_unit),
+            "Orientation": (self.orientation.to_dict(), self.orientation_unit),
+            "Beam center": (self.beam_center.to_dict(), self.beam_center_unit),
+            "Pixel size":  (self.pixel_size.to_dict(),  self.pixel_size_unit),
+            "Slit length": (self.slit_length, self.slit_length_unit),
+        }
+
 
 class Aperture(object):
     ## Name
@@ -274,6 +292,14 @@ class Collimation(object):
             _str += "   Aperture_dist:%s [%s]\n" % \
                 (str(item.distance), str(item.distance_unit))
         return _str
+
+    def to_dict(self):
+        return {
+            "Length": [self.length, self.length_unit],
+            "Aperture size": [ [i.size.to_dict(), i.size_unit] for i in self.aperture ],
+            "Aperture distance": [ [i.distance, i.distance_unit] 
+                                    for i in self.aperture ],
+        }
 
 
 class Source(object):
@@ -322,6 +348,17 @@ class Source(object):
         _str += "   Beam_size:    %s [%s]\n" % \
             (str(self.beam_size), str(self.beam_size_unit))
         return _str
+
+    def to_dict(self):
+        return {
+            "Radiation": self.radiation,
+            "Shape": self.beam_shape,
+            "Wavelength": (self.wavelength, self.wavelength_unit),
+            "Wavelength min": (self.wavelength_min, self.wavelength_min_unit),
+            "Wavelength max": (self.wavelength_max, self.wavelength_max_unit),
+            "Wavelength spread": (self.wavelength_spread, self.wavelength_spread_unit),
+            "Beam size": (self.beam_size.to_dict(), self.beam_size_unit),
+        }
 
 
 """
@@ -385,6 +422,17 @@ class Sample(object):
 
         return _str
 
+    def to_dict(self):
+        return {
+            "ID": self.ID,
+            "Transmission": self.transmission,
+            "Thickness": (self.thickness, self.thickness_unit),
+            "Temperature": (self.temperature, self.temperature_unit),
+            "Position": (self.position.to_dict(), self.position_unit),
+            "Orientation": (self.orientation.to_dict(), self.orientation_unit),
+            "Details": [ i for i in self.details ],
+        }
+
 
 class Process(object):
     """
@@ -425,6 +473,15 @@ class Process(object):
             _str += "   Note:         %s\n" % item
         return _str
 
+    def to_dict(self):
+        return {
+            "Name": self.name,
+            "Date": self.date,
+            "Description": self.description,
+            "Term": [ i for i in self.term ],
+            "Notes": [ i for i in self.notes ],
+        }
+
 
 class TransmissionSpectrum(object):
     """
@@ -460,6 +517,21 @@ class TransmissionSpectrum(object):
                 len(self.transmission_deviation)]
         _str += "   Number of Pts:    \t{0}\n".format(max(length_list))
         return _str
+
+    def to_dict(self):
+        """
+        Dict representation of spectrum metadata
+        """
+        length_list = [len(self.wavelength), len(self.transmission), \
+                len(self.transmission_deviation)]
+        return {
+            "Name": self.name,
+            "Timestamp": self.timestamp,
+            "Wavelength unit": self.wavelength_unit,
+            "Transmission unit": self.transmission_unit,
+            "Transmission deviation unit": self.transmission_deviation_unit,
+            "Number of pts": max(length_list),
+        }
 
 
 class DataInfo(object):
@@ -568,6 +640,25 @@ class DataInfo(object):
         for item in self.trans_spectrum:
             _str += "%s\n" % str(item)
         return _str
+
+    def to_dict(self):
+        """
+        Dict representation of DataInfo
+        """
+        return {
+            'Filename': self.filename,
+            'Title': self.title,
+            'Run': self.run,
+            'SESANS': self.isSesans,
+            'Instrument': self.instrument,
+            'Sample': self.sample.to_dict(),
+            'Source': self.source.to_dict(),
+            'Detector': [ i.to_dict() for i in self.detector ],
+            'Collimation': [ i.to_dict() for i in self.collimation ],
+            'Process': [ i.to_dict() for i in self.process],
+            'Notes': [ str(i) for i in self.notes],
+            'Transmission Spectrum': [ i.to_dict() for i in self.trans_spectrum],
+        }
 
     # Private method to perform operation. Not implemented for DataInfo,
     # but should be implemented for each data class inherited from DataInfo
@@ -735,6 +826,21 @@ class Data1D(plottable_1D, DataInfo):
         _str += "   Y-axis:       %s\t[%s]\n" % (self._yaxis, self._yunit)
         _str += "   Length:       %g\n" % len(self.x)
         return _str
+
+    def to_dict(self):
+        """
+        Dict representation of associated metadata
+        """
+        _dict = DataInfo.to_dict(self)
+        _dict.update({
+            "Data": {
+                "Type": self.__class__.__name__,
+                "X axis": {"Name": self._xaxis, "Units": self._xunit},
+                "Y axis": {"Name": self._yaxis, "Units": self._yunit},
+                "Length": len(self.x),
+            },
+        })
+        return _dict
 
     def is_slit_smeared(self):
         """
