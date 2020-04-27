@@ -27,6 +27,8 @@ import numpy as np
 import math
 from math import fabs
 
+import xarray as xr
+
 class plottable_1D(object):
     """
     Data1D is a place holder for 1D plottables.
@@ -80,6 +82,20 @@ class plottable_1D(object):
         """
         self._yaxis = label
         self._yunit = unit
+
+    def to_dataset(self):
+        """
+        Return Data1D object as xarray Dataset
+        """
+        # dxl, dxw are always set to None in Data1D
+        return xr.Dataset({
+            'X': self.x,
+            'Y': self.y,
+            'dX': self.dx,
+            'dY': self.dy,
+            'lam': self.dy,
+            'dlam': self.dy,
+        })
 
 
 class plottable_2D(object):
