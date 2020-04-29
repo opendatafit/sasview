@@ -27,7 +27,7 @@ import numpy as np
 import math
 from math import fabs
 
-import xarray as xr
+import pandas as pd
 
 class plottable_1D(object):
     """
@@ -83,16 +83,17 @@ class plottable_1D(object):
         self._yaxis = label
         self._yunit = unit
 
-    def to_dataset(self):
+    def to_dataframe(self):
         """
-        Return Data1D object as xarray Dataset
+        Return Data1D object as pandas DataFrame
         """
         # dxl, dxw are always set to None in Data1D
-        return xr.Dataset({
-            'X': self.x,
-            'Y': self.y,
-            'dX': self.dx,
-            'dY': self.dy,
+        # TODO: POPULATE ATTRS HERE WITH XAXIS/YAXIS LABEL/UNIT
+        return pd.DataFrame(data={
+            'x': self.x,
+            'y': self.y,
+            'dx': self.dx,
+            'dy': self.dy,
             'lam': self.dy,
             'dlam': self.dy,
         })
