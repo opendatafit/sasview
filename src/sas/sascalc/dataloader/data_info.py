@@ -87,9 +87,8 @@ class plottable_1D(object):
         """
         Return Data1D object as pandas DataFrame
         """
-        # dxl, dxw are always set to None in Data1D
-        # TODO: POPULATE ATTRS HERE WITH XAXIS/YAXIS LABEL/UNIT
-        return pd.DataFrame(data={
+
+        df = pd.DataFrame(data={
             'x': self.x,
             'y': self.y,
             'dx': self.dx,
@@ -97,6 +96,13 @@ class plottable_1D(object):
             'lam': self.dy,
             'dlam': self.dy,
         })
+
+        df.attrs['variables'] = [
+            {'key': 'x', 'name': self._xaxis, 'units': self._xunit, 'scale': 'log'},
+            {'key': 'y', 'name': self._yaxis, 'units': self._yunit, 'scale': 'log'},
+        ]
+
+        return df
 
 
 class plottable_2D(object):
