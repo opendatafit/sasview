@@ -69,6 +69,8 @@ class plottable_1D(object):
         if dlam is not None:
             self.dlam = np.asarray(dlam)
 
+        self.qmin, self.qmax = self.x.min(), self.x.max()
+
     def xaxis(self, label, unit):
         """
         set the x axis label and unit
