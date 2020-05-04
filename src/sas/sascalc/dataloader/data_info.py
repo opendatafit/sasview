@@ -228,6 +228,12 @@ class Vector(object):
             'z': self.z,
         }
 
+    @classmethod
+    def from_dict(cls, meta):
+        return cls(x=meta.get('x'),
+                   y=meta.get('y'),
+                   z=meta.get('z'))
+
 
 class Detector(object):
     """
@@ -294,6 +300,20 @@ class Detector(object):
             "Slit length": (self.slit_length, self.slit_length_unit),
         }
 
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.name = meta.get("Name")
+        obj.distance, obj.distance_unit = meta.get("Distance")
+        obj.offset = Vector.from_dict(meta.get("Offset")[0])
+        obj.offset_unit = meta.get("Offset")[1]
+        obj.beam_center = Vector.from_dict(meta.get("Beam center")[0])
+        obj.beam_center_unit = meta.get("Beam center")[1]
+        obj.pixel_size = Vector.from_dict(meta.get("Pixel size")[0])
+        obj.pixel_size_unit = meta.get("Pixel size")[1]
+        obj.slit_length, obj.slit_length_unit = meta.get("Slit length")
+        return obj
+
 
 class Aperture(object):
     ## Name
@@ -311,6 +331,26 @@ class Aperture(object):
 
     def __init__(self):
         self.size = Vector()
+
+    def to_dict(self):
+        return {
+            "Name": self.name,
+            "Type": self.type,
+            "Size name": self.size_name,
+            "Size": (self.size.to_dict(), self.size_unit),
+            "Distance": (self.distance, self.distance_unit),
+        }
+
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.name = meta.get("Name")
+        obj.type = meta.get("Type")
+        obj.size_name = meta.get("Size name")
+        obj.size = Vector.from_dict(meta.get("Size")[0])
+        obj.size_unit = meta.get("Size")[1]
+        obj.distance, obj.distance_unit = meta.get("Distance")
+        return obj
 
 
 class Collimation(object):
@@ -342,10 +382,15 @@ class Collimation(object):
     def to_dict(self):
         return {
             "Length": [self.length, self.length_unit],
-            "Aperture size": [ [i.size.to_dict(), i.size_unit] for i in self.aperture ],
-            "Aperture distance": [ [i.distance, i.distance_unit] 
-                                    for i in self.aperture ],
+            "Aperture": [ i.to_dict() for i in self.aperture ],
         }
+
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.length, obj.length_unit = meta.get("Length")
+        obj.aperture = [ Aperture.from_dict(i) for i in meta.get("Aperture") ]
+        return obj
 
 
 class Source(object):
@@ -405,6 +450,19 @@ class Source(object):
             "Wavelength spread": (self.wavelength_spread, self.wavelength_spread_unit),
             "Beam size": (self.beam_size.to_dict(), self.beam_size_unit),
         }
+
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.radiation = meta.get("Radiation")
+        obj.beam_shape = meta.get("Shape")
+        obj.wavelength, obj.wavelength_unit = meta.get("Wavelength", (None, None))
+        obj.wavelength_min, obj.wavelength_min_unit = meta.get("Wavelength min", (None, None))
+        obj.wavelength_max, obj.wavelength_max_unit = meta.get("Wavelength max", (None, None))
+        obj.wavelength_spread, obj.wavelength_spread_unit = meta.get("Wavelength spread", (None, None))
+        obj.beam_size = Vector.from_dict(meta.get("Beam size")[0])
+        obj.beam_size_unit = meta.get("Beam size")[1]
+        return obj
 
 
 """
@@ -479,6 +537,20 @@ class Sample(object):
             "Details": [ i for i in self.details ],
         }
 
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.ID = meta.get("ID")
+        obj.transmission = meta.get("Transmission")
+        obj.thickness, obj.thickness_unit = meta.get("Thickness", (None, None))
+        obj.temperature, obj.temperature_unit = meta.get("Temperature", (None, None))
+        obj.position = Vector.from_dict(meta.get("Position")[0])
+        obj.position_unit = meta.get("Position")[1]
+        obj.orientation = Vector.from_dict(meta.get("Orientation")[0])
+        obj.orientation_unit = meta.get("Orientation")[1]
+        obj.details = meta.get("Details", [])
+        return obj
+
 
 class Process(object):
     """
@@ -524,9 +596,19 @@ class Process(object):
             "Name": self.name,
             "Date": self.date,
             "Description": self.description,
-            "Term": [ i for i in self.term ],
-            "Notes": [ i for i in self.notes ],
+            "Term": self.term,
+            "Notes": self.notes,
         }
+
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.name = meta.get("Name")
+        obj.date = meta.get("Date")
+        obj.description = meta.get("Description")
+        obj.term = meta.get("Term", [])
+        obj.notes = meta.get("Notes", [])
+        return obj
 
 
 class TransmissionSpectrum(object):
@@ -573,11 +655,21 @@ class TransmissionSpectrum(object):
         return {
             "Name": self.name,
             "Timestamp": self.timestamp,
-            "Wavelength unit": self.wavelength_unit,
-            "Transmission unit": self.transmission_unit,
-            "Transmission deviation unit": self.transmission_deviation_unit,
+            "Wavelength": (list(self.wavelength), self.wavelength_unit),
+            "Transmission": (list(self.transmission), self.transmission_unit),
+            "Transmission deviation": (list(self.transmission_deviation), self.transmission_deviation_unit),
             "Number of pts": max(length_list),
         }
+
+    @classmethod
+    def from_dict(cls, meta):
+        obj = cls()
+        obj.name = meta.get("Name")
+        obj.timestamp = meta.get("Timestamp")
+        obj.wavelength, obj.wavelength_unit = meta.get("Wavelength", ([], ""))
+        obj.transmission, obj.transmission_unit = meta.get("Transmission", ([], ""))
+        obj.transmission_deviation, obj.transmission_deviation_unit = meta.get("Transmission deviation", ([], ""))
+        return obj
 
 
 class DataInfo(object):
@@ -705,6 +797,31 @@ class DataInfo(object):
             'Notes': [ str(i) for i in self.notes],
             'Transmission Spectrum': [ i.to_dict() for i in self.trans_spectrum],
         }
+
+    def from_dict(self, meta):
+        """
+        Import metadata from dict representation
+        """
+
+        self.filename   = meta.get('Filename')
+        self.title      = meta.get('Title')
+        self.run        = meta.get('Run')
+        self.instrument = meta.get('Instrument')
+
+        self.sample = Sample.from_dict(meta.get('Sample'))
+        self.source = Source.from_dict(meta.get('Source'))
+
+        self.detector    = [ Detector.from_dict(i) 
+                             for i in meta.get('Detector', []) ]
+        self.collimation = [ Collimation.from_dict(i) 
+                             for i in meta.get('Collimation', []) ]
+        self.process     = [ Process.from_dict(i) 
+                             for i in meta.get('Collimation', []) ]
+
+        self.notes      = meta.get('Notes', [])
+
+        self.trans_spectrum = [ TransmissionSpectrum.from_dict(i) 
+            for i in meta.get('Transmission Spectrum', []) ]
 
     # Private method to perform operation. Not implemented for DataInfo,
     # but should be implemented for each data class inherited from DataInfo
@@ -860,6 +977,31 @@ class Data1D(plottable_1D, DataInfo):
                 self.y_unit = '1/cm'
         except: # the data is not recognized/supported, and the user is notified
             raise TypeError('data not recognized, check documentation for supported 1D data formats')
+
+    @classmethod
+    def from_dataframe(cls, df):
+        """
+        Create Data1D object from pandas DataFrame
+        """
+        print("*****************************")
+        print("DATA1D: FROM_DATAFRAME CALLED")
+        obj = super().from_dataframe(df)
+
+        if df.attrs and 'metadata' in df.attrs:
+            print("DATA1D: GOT METADATA", df.attrs['metadata'])
+            # Import metadata
+            obj.from_dict(df.attrs['metadata'])
+        print("*****************************")
+
+        return obj
+
+    def to_dataframe(self):
+        """
+        Return Data1D object as pandas DataFrame
+        """
+        df = super().to_dataframe()
+        df.attrs['metadata'] = self.to_dict()
+        return df
 
     def __str__(self):
         """
