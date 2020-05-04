@@ -83,6 +83,27 @@ class plottable_1D(object):
         self._yaxis = label
         self._yunit = unit
 
+    @classmethod
+    def from_dataframe(cls, df):
+        """
+        Create Data1D object from pandas DataFrame
+        """
+        obj = cls(x   =df['x'].to_numpy(),
+                  y   =df['y'].to_numpy(),
+                  dx  =df['dx'].to_numpy(),
+                  dy  =df['dy'].to_numpy(),
+                  lam =df['lam'].to_numpy(),
+                  dlam=df['dlam'].to_numpy())
+
+        if df.attrs and 'variables' in df.attrs:
+            for v in df.attrs['variables']:
+                if v['key'] == 'x':
+                    obj.xaxis(label=v['name'], unit=v['units'])
+                if v['key'] == 'y':
+                    obj.yaxis(label=v['name'], unit=v['units'])
+
+        return obj
+
     def to_dataframe(self):
         """
         Return Data1D object as pandas DataFrame
