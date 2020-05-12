@@ -121,8 +121,8 @@ class plottable_1D(object):
         })
 
         df.attrs['variables'] = [
-            {'key': 'x', 'name': self._xaxis, 'units': self._xunit, 'scale': 'log'},
-            {'key': 'y', 'name': self._yaxis, 'units': self._yunit, 'scale': 'log'},
+            {'key': 'x', 'name': self._xaxis, 'units': self._xunit, 'scale': 'log', 'independent': True},
+            {'key': 'y', 'name': self._yaxis, 'units': self._yunit, 'scale': 'log', 'dependent': ['x']},
         ]
 
         return df
