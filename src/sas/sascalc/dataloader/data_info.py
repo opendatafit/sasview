@@ -28,6 +28,8 @@ import math
 from math import fabs
 
 import pandas as pd
+from frictionless import Package, Resource
+
 
 class plottable_1D(object):
     """
@@ -86,29 +88,30 @@ class plottable_1D(object):
         self._yunit = unit
 
     @classmethod
-    def from_dataframe(cls, df):
+    def from_resource(cls, resource):
         """
-        Create Data1D object from pandas DataFrame
+        Create Data1D object from frictionless data Resource
         """
-        obj = cls(x   =df['x'].to_numpy(),
-                  y   =df['y'].to_numpy(),
-                  dx  =df['dx'].to_numpy(),
-                  dy  =df['dy'].to_numpy(),
-                  lam =df['lam'].to_numpy(),
-                  dlam=df['dlam'].to_numpy())
+        df = resource.data
 
-        if df.attrs and 'variables' in df.attrs:
-            for v in df.attrs['variables']:
-                if v['key'] == 'x':
-                    obj.xaxis(label=v['name'], unit=v['units'])
-                if v['key'] == 'y':
-                    obj.yaxis(label=v['name'], unit=v['units'])
+        obj = cls(x   =df["x"].to_numpy(),
+                  y   =df["y"].to_numpy(),
+                  dx  =df["dx"].to_numpy(),
+                  dy  =df["dy"].to_numpy(),
+                  lam =df["lam"].to_numpy(),
+                  dlam=df["dlam"].to_numpy())
+
+        for field in resource.schema.fields:
+            if field.get("name", None) == "x":
+                obj.xaxis(label=field["name"], unit=field["unit"])
+            if field.get("name", None) == "y":
+                obj.yaxis(label=field["name"], unit=field["unit"])
 
         return obj
 
-    def to_dataframe(self):
+    def to_resource(self):
         """
-        Return Data1D object as pandas DataFrame
+        Return Data1D object as a frictionless data Resource
         """
 
         df = pd.DataFrame(data={
@@ -116,16 +119,36 @@ class plottable_1D(object):
             'y': self.y,
             'dx': self.dx,
             'dy': self.dy,
-            'lam': self.dy,
-            'dlam': self.dy,
+            'lam': self.lam,
+            'dlam': self.dlam,
         })
 
-        df.attrs['variables'] = [
-            {'key': 'x', 'name': self._xaxis, 'units': self._xunit, 'scale': 'log', 'independent': True},
-            {'key': 'y', 'name': self._yaxis, 'units': self._yunit, 'scale': 'log', 'dependent': ['x']},
-        ]
-
-        return df
+        return Resource(
+            df,
+            name="data",
+            format="pandas",
+            schema={
+                'primaryKey': 'x',
+                'fields': [
+                    {
+                        'name': 'x',
+                        'type': 'number',
+                        'title': self._xaxis,
+                        'unit': self._xunit,
+                    },
+                    {
+                        'name': 'y',
+                        'type': 'number',
+                        'title': self._yaxis,
+                        'unit': self._yunit,
+                    },
+                    {'name': 'dx', 'type': 'number'},
+                    {'name': 'dy', 'type': 'number'},
+                    {'name': 'lam', 'type': 'number'},
+                    {'name': 'dlam', 'type': 'number'},
+                ]
+            }
+        )
 
 
 class plottable_2D(object):
@@ -979,29 +1002,24 @@ class Data1D(plottable_1D, DataInfo):
             raise TypeError('data not recognized, check documentation for supported 1D data formats')
 
     @classmethod
-    def from_dataframe(cls, df):
+    def from_resource(cls, resource):
         """
-        Create Data1D object from pandas DataFrame
+        " Create Data1D object from frictionless data Resource
         """
-        print("*****************************")
-        print("DATA1D: FROM_DATAFRAME CALLED")
-        obj = super().from_dataframe(df)
+        obj = super().from_resource(resource)
 
-        if df.attrs and 'metadata' in df.attrs:
-            print("DATA1D: GOT METADATA", df.attrs['metadata'])
-            # Import metadata
-            obj.from_dict(df.attrs['metadata'])
-        print("*****************************")
-
+        # Import metadata
+        obj.from_dict(resource.schema["vnd:sasview"])
         return obj
 
-    def to_dataframe(self):
+    def to_resource(self):
         """
-        Return Data1D object as pandas DataFrame
+        " Return Data1D object as frictionless data Resource
         """
-        df = super().to_dataframe()
-        df.attrs['metadata'] = self.to_dict()
-        return df
+        resource = super().to_resource()
+        # Add metadata to resource
+        resource.schema["vnd:sasview"] = self.to_dict()
+        return resource
 
     def __str__(self):
         """
